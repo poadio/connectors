@@ -1,0 +1,37 @@
+{
+  "id": "custom-image",
+  "version": "1.0.0",
+  "name": "Image Docker",
+  "description": "Exécute n'importe quelle image Docker comme étape du flow.",
+  "category": "code",
+  "tags": ["docker", "conteneur", "image", "personnalisé"],
+  "kind": "custom",
+  "image": null,
+  "parameters": [
+    {
+      "key": "image",
+      "label": "Image",
+      "type": "text",
+      "required": true,
+      "help": "Référence complète de l'image. Préférer une version précise ou un digest à « latest ».",
+      "placeholder": "ghcr.io/organisation/outil:1.4.2"
+    },
+    {
+      "key": "command",
+      "label": "Commande",
+      "type": "text",
+      "help": "Vide : la commande par défaut de l'image. Le moteur la découpe en arguments, sans jamais la passer à un shell.",
+      "placeholder": "python /app/main.py --mode complet"
+    },
+    {
+      "key": "env",
+      "label": "Variables d'environnement",
+      "type": "pairs",
+      "help": "Variables passées au conteneur. Les noms réservés (POAD_*, PATH...) sont refusés par le moteur."
+    }
+  ],
+  "outputs": [],
+  "produces": ["file"],
+  "resources": { "cpu": 1, "memory": "512Mi" },
+  "timeout": 900
+}

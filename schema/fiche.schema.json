@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://poad.io/schema/connectors/fiche.schema.json",
+  "title": "Fiche d'un connecteur poad",
+  "description": "Décrit comment exécuter un connecteur (image épinglée, paramètres, identifiant, ressources) et comment dessiner son formulaire. Les règles croisées (catégorie connue, image épinglée, variables uniques, showIf, default...) sont vérifiées par scripts/validate.ts. Le mot-clé « x-message » porte le message d'erreur affiché par le validateur.",
+  "type": "object",
+  "required": ["id", "version", "name", "description", "category", "image", "parameters", "resources", "timeout"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Identifiant du connecteur, égal au nom de son dossier.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,62}$",
+      "x-message": "id invalide : minuscules, chiffres et tirets, commence par une lettre, 63 caractères au plus"
+    },
+    "version": {
+      "description": "Version de la fiche, semver strict.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$",
+      "x-message": "version invalide : semver strict attendu (exemple : 1.0.0)"
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "category": {
+      "description": "Identifiant d'une catégorie de categories.json.",
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "kind": {
+      "description": "« image » (défaut) : la fiche fixe l'image. « custom » : l'image est un paramètre saisi par l'utilisateur.",
+      "enum": ["image", "custom"]
+    },
+    "image": {
+      "description": "Image Docker épinglée (tag de version précis ou digest sha256). null uniquement si kind vaut « custom ».",
+      "type": ["string", "null"]
+    },
+    "script": {
+      "description": "Fichier du dossier du connecteur, monté en /poad/run.sh.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "x-message": "script invalide : simple nom de fichier du dossier du connecteur, sans chemin"
+    },
+    "command": {
+      "description": "Commande du conteneur. Par défaut [\"sh\", \"/poad/run.sh\"] s'il y a un script, sinon la commande de l'image.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+    "credential": { "$ref": "#/$defs/credential" },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/output" }
+    },
+    "produces": {
+      "description": "Ce que l'étape peut déposer en plus de son résultat.",
+      "type": "array",
+      "items": { "enum": ["file"] },
+      "uniqueItems": true
+    },
+    "resources": {
+      "type": "object",
+      "required": ["cpu", "memory"],
+      "additionalProperties": false,
+      "properties": {
+        "cpu": {
+          "description": "Nombre de cœurs (fractions permises).",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 64
+        },
+        "memory": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*(Mi|Gi)$",
+          "x-message": "memory invalide : entier suivi de Mi ou Gi (exemple : 256Mi)"
+        }
+      }
+    },
+    "timeout": {
+      "description": "Durée maximale de l'étape, en secondes.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 86400
+    }
+  },
+  "if": {
+    "required": ["kind"],
+    "properties": { "kind": { "const": "custom" } }
+  },
+  "then": {
+    "properties": {
+      "image": {
+        "const": null,
+        "x-message": "un connecteur « custom » n'a pas d'image dans sa fiche : \"image\" doit valoir null"
+      },
+      "script": {
+        "not": {},
+        "x-message": "un connecteur « custom » ne peut pas déclarer de script"
+      },
+      "command": {
+        "not": {},
+        "x-message": "un connecteur « custom » ne peut pas déclarer de commande : elle vient de ses paramètres"
+      },
+      "credential": {
+        "not": {},
+        "x-message": "un connecteur « custom » ne peut pas déclarer d'identifiant"
+      },
+      "parameters": {
+        "items": {
+          "properties": {
+            "env": {
+              "not": {},
+              "x-message": "les paramètres d'un connecteur « custom » sont lus par le moteur : pas de variable « env »"
+            }
+          }
+        }
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "image": {
+        "type": "string",
+        "minLength": 1,
+        "x-message": "image obligatoire : seul un connecteur de kind « custom » peut avoir \"image\": null"
+      },
+      "parameters": {
+        "items": { "required": ["env"] }
+      }
+    }
+  },
+  "$defs": {
+    "envName": {
+      "description": "Nom de variable d'environnement portée par un paramètre ou un champ d'identifiant.",
+      "type": "string",
+      "allOf": [
+        {
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "x-message": "nom de variable invalide : majuscules, chiffres et soulignés, commence par une lettre"
+        },
+        {
+          "not": { "pattern": "^POAD_" },
+          "x-message": "nom de variable interdit : le préfixe POAD_ est réservé au moteur"
+        },
+        {
+          "not": { "enum": ["PATH", "HOME", "LD_PRELOAD", "LD_LIBRARY_PATH", "NODE_OPTIONS", "BASH_ENV", "ENV", "IFS"] },
+          "x-message": "nom de variable interdit : il modifierait le comportement du conteneur"
+        }
+      ]
+    },
+    "scalar": {
+      "type": ["string", "number", "boolean"]
+    },
+    "parameter": {
+      "type": "object",
+      "required": ["key", "label", "type"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,62}$",
+          "x-message": "clé de paramètre invalide : minuscules, chiffres et soulignés, commence par une lettre"
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["text", "number", "boolean", "choice", "code", "sql", "pairs"] },
+        "required": { "type": "boolean" },
+        "env": { "$ref": "#/$defs/envName" },
+        "help": { "type": "string" },
+        "placeholder": { "type": "string" },
+        "default": {
+          "description": "Valeur par défaut ; son type dépend de « type » (vérifié par le validateur)."
+        },
+        "showIf": {
+          "description": "N'affiche le champ que si chaque paramètre cité a l'une des valeurs données.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "array"],
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/scalar" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "number" } } },
+          "then": {
+            "properties": {
+              "min": { "type": "number" },
+              "max": { "type": "number" }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "choice" } } },
+          "then": {
+            "required": ["options"],
+            "properties": {
+              "options": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": ["string", "object"],
+                  "required": ["value", "label"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "value": { "type": "string" },
+                    "label": { "type": "string", "minLength": 1 }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "code" } } },
+          "then": {
+            "properties": {
+              "language": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "credential": {
+      "type": "object",
+      "required": ["type", "env"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "description": "Type d'identifiant : nom d'un fichier de credentials/.",
+          "type": "string",
+          "minLength": 1
+        },
+        "required": { "type": "boolean" },
+        "env": {
+          "description": "Clé de champ du type d'identifiant → variable d'environnement.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/envName" }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["key", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,62}$",
+          "x-message": "clé de sortie invalide : minuscules, chiffres et soulignés, commence par une lettre"
+        },
+        "type": { "enum": ["string", "number", "boolean", "object", "array"] },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

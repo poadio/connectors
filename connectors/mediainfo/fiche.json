@@ -1,0 +1,33 @@
+{
+  "id": "mediainfo",
+  "version": "0.1.0",
+  "name": "Informations sur un média",
+  "description": "Lit la durée, le codec et les dimensions d'un fichier audio ou vidéo. Provisoire : mediainfo est installé au démarrage (apk) faute d'image dédiée épinglée.",
+  "category": "video",
+  "tags": ["vidéo", "audio", "métadonnées", "durée", "codec"],
+  "image": "alpine:3.20.3",
+  "script": "run.sh",
+  "command": ["sh", "/poad/run.sh"],
+  "parameters": [
+    {
+      "key": "url",
+      "label": "Adresse du fichier",
+      "type": "text",
+      "required": true,
+      "env": "MEDIA_URL",
+      "help": "Adresse http:// ou https:// du fichier à analyser. Un fichier produit par une étape précédente se désigne par son adresse.",
+      "placeholder": "https://exemple.fr/videos/film.mp4"
+    }
+  ],
+  "outputs": [
+    { "key": "format", "type": "string", "description": "Format du conteneur (MPEG-4, Matroska...)." },
+    { "key": "duration", "type": "number", "description": "Durée en secondes ; null si inconnue." },
+    { "key": "codec", "type": "string", "description": "Codec de la première piste vidéo (AVC, HEVC...) ; null sans piste vidéo." },
+    { "key": "width", "type": "number", "description": "Largeur en pixels ; null sans piste vidéo." },
+    { "key": "height", "type": "number", "description": "Hauteur en pixels ; null sans piste vidéo." },
+    { "key": "frame_rate", "type": "number", "description": "Images par seconde ; null si inconnu." },
+    { "key": "audio_codec", "type": "string", "description": "Codec de la première piste audio ; null sans piste audio." }
+  ],
+  "resources": { "cpu": 0.5, "memory": "256Mi" },
+  "timeout": 600
+}

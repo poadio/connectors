@@ -1,0 +1,88 @@
+{
+  "id": "http-request",
+  "version": "1.0.0",
+  "name": "Requête HTTP",
+  "description": "Appelle une adresse HTTP ou HTTPS et rend le code, les en-têtes et le corps de la réponse.",
+  "category": "internet",
+  "tags": ["api", "http", "rest", "webhook", "téléchargement"],
+  "image": "curlimages/curl:8.11.1",
+  "script": "run.sh",
+  "command": ["sh", "/poad/run.sh"],
+  "parameters": [
+    {
+      "key": "url",
+      "label": "Adresse",
+      "type": "text",
+      "required": true,
+      "env": "HTTP_URL",
+      "help": "Adresse complète, en http:// ou https://.",
+      "placeholder": "https://api.exemple.fr/v1/ressources"
+    },
+    {
+      "key": "method",
+      "label": "Méthode",
+      "type": "choice",
+      "options": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      "default": "GET",
+      "env": "HTTP_METHOD"
+    },
+    {
+      "key": "headers",
+      "label": "En-têtes",
+      "type": "pairs",
+      "env": "HTTP_HEADERS",
+      "help": "En-têtes ajoutés à la requête. L'en-tête d'authentification se règle plutôt avec un identifiant."
+    },
+    {
+      "key": "body",
+      "label": "Corps",
+      "type": "code",
+      "language": "json",
+      "env": "HTTP_BODY",
+      "help": "Envoyé tel quel. Sans en-tête Content-Type, il est déclaré en application/json.",
+      "showIf": { "method": ["POST", "PUT", "PATCH"] }
+    },
+    {
+      "key": "follow_redirects",
+      "label": "Suivre les redirections",
+      "type": "boolean",
+      "default": false,
+      "env": "HTTP_FOLLOW_REDIRECTS",
+      "help": "Cinq redirections au plus. Les en-têtes ajoutés sont renvoyés à l'adresse de redirection, sauf Authorization quand l'hôte change."
+    },
+    {
+      "key": "fail_on_error",
+      "label": "Échouer sur un code d'erreur",
+      "type": "boolean",
+      "default": true,
+      "env": "HTTP_FAIL_ON_ERROR",
+      "help": "Si coché, un code 400 ou plus fait échouer l'étape. Sinon la réponse est rendue telle quelle."
+    },
+    {
+      "key": "save_as",
+      "label": "Enregistrer la réponse sous",
+      "type": "text",
+      "env": "HTTP_SAVE_AS",
+      "help": "Nom de fichier. S'il est renseigné, le corps est déposé en fichier, entier, au lieu d'être rendu dans le résultat.",
+      "placeholder": "export.csv"
+    }
+  ],
+  "credential": {
+    "type": "http-header",
+    "required": false,
+    "env": { "name": "HTTP_AUTH_HEADER", "value": "HTTP_AUTH_VALUE" }
+  },
+  "outputs": [
+    { "key": "status", "type": "number", "description": "Code HTTP de la réponse." },
+    { "key": "headers", "type": "object", "description": "En-têtes de la réponse, noms en minuscules." },
+    { "key": "body", "type": "string", "description": "Corps de la réponse en texte, tronqué à 256 Kio. null si le corps est binaire ou déposé en fichier." },
+    { "key": "body_json", "type": "object", "description": "Corps décodé, présent seulement si la réponse est du JSON valide et n'a pas été tronquée." },
+    { "key": "body_size", "type": "number", "description": "Taille du corps reçu, en octets." },
+    { "key": "body_truncated", "type": "boolean", "description": "Vrai si le corps dépassait 256 Kio." },
+    { "key": "body_binary", "type": "boolean", "description": "Présent et vrai si le corps est binaire et n'a pas été rendu." },
+    { "key": "file", "type": "string", "description": "Nom du fichier déposé, si « Enregistrer la réponse sous » est renseigné." }
+  ],
+  "produces": ["file"],
+  "resources": { "cpu": 0.5, "memory": "256Mi" },
+  "timeout": 300
+}

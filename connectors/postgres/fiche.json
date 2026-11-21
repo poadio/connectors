@@ -1,0 +1,64 @@
+{
+  "id": "postgres",
+  "version": "1.0.0",
+  "name": "PostgreSQL",
+  "description": "Exécute une requête SQL sur une base PostgreSQL et rend les lignes en JSON.",
+  "category": "database",
+  "tags": ["sql", "postgresql", "base de données", "requête"],
+  "image": "postgres:17.2-alpine",
+  "script": "run.sh",
+  "command": ["sh", "/poad/run.sh"],
+  "parameters": [
+    {
+      "key": "sql",
+      "label": "Requête SQL",
+      "type": "sql",
+      "required": true,
+      "env": "PG_SQL",
+      "help": "En mode « Lire des lignes » : une seule instruction qui rend des lignes (SELECT, ou INSERT / UPDATE / DELETE avec RETURNING).",
+      "placeholder": "SELECT id, nom FROM clients WHERE actif"
+    },
+    {
+      "key": "mode",
+      "label": "Mode",
+      "type": "choice",
+      "options": [
+        { "value": "rows", "label": "Lire des lignes" },
+        { "value": "execute", "label": "Exécuter un script" }
+      ],
+      "default": "rows",
+      "env": "PG_MODE",
+      "help": "« Exécuter un script » lance le SQL tel quel dans une transaction (plusieurs instructions, DDL...) et ne rend aucune ligne."
+    },
+    {
+      "key": "max_rows",
+      "label": "Nombre maximal de lignes",
+      "type": "number",
+      "min": 1,
+      "max": 100000,
+      "default": 1000,
+      "env": "PG_MAX_ROWS",
+      "help": "Au-delà, les lignes sont coupées et « truncated » vaut vrai.",
+      "showIf": { "mode": "rows" }
+    }
+  ],
+  "credential": {
+    "type": "postgres",
+    "required": true,
+    "env": {
+      "host": "PGHOST",
+      "port": "PGPORT",
+      "database": "PGDATABASE",
+      "user": "PGUSER",
+      "password": "PGPASSWORD",
+      "sslmode": "PGSSLMODE"
+    }
+  },
+  "outputs": [
+    { "key": "rows", "type": "array", "description": "Lignes rendues par la requête, un objet par ligne (colonne → valeur)." },
+    { "key": "row_count", "type": "number", "description": "Nombre de lignes rendues." },
+    { "key": "truncated", "type": "boolean", "description": "Vrai si la requête avait plus de lignes que le maximum demandé." }
+  ],
+  "resources": { "cpu": 0.5, "memory": "512Mi" },
+  "timeout": 600
+}

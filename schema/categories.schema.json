@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://poad.io/schema/connectors/categories.schema.json",
+  "title": "Catégories de la palette poad",
+  "description": "Groupes dans lesquels l'éditeur de flows range les connecteurs.",
+  "type": "object",
+  "required": ["version", "categories"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "icon", "order"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,62}$",
+            "x-message": "id de catégorie invalide : minuscules, chiffres et tirets, commence par une lettre"
+          },
+          "label": { "type": "string", "minLength": 1 },
+          "icon": {
+            "description": "Nom d'une icône lucide.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "x-message": "icône invalide : nom d'icône lucide attendu (minuscules, chiffres, tirets)"
+          },
+          "order": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

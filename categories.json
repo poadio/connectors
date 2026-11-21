@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "categories": [
+    { "id": "trigger", "label": "Déclencheurs", "icon": "zap", "order": 1 },
+    { "id": "logic", "label": "Logique", "icon": "git-branch", "order": 2 },
+    { "id": "code", "label": "Code", "icon": "code", "order": 3 },
+    { "id": "internet", "label": "Internet", "icon": "globe", "order": 4 },
+    { "id": "database", "label": "Bases de données", "icon": "database", "order": 5 },
+    { "id": "file", "label": "Fichiers", "icon": "folder", "order": 6 },
+    { "id": "video", "label": "Vidéo", "icon": "film", "order": 7 },
+    { "id": "geo", "label": "Géographie", "icon": "map", "order": 8 },
+    { "id": "ai", "label": "IA", "icon": "sparkles", "order": 9 }
+  ]
+}
