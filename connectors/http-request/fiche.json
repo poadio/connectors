@@ -68,7 +68,7 @@
     }
   ],
   "credential": {
-    "type": "http-header",
+    "type": "http_header",
     "required": false,
     "env": { "name": "HTTP_AUTH_HEADER", "value": "HTTP_AUTH_VALUE" }
   },

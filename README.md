@@ -55,7 +55,7 @@ bun run build      # écrit dist/catalog.json
     { "key": "method", "label": "Méthode", "type": "choice", "options": ["GET", "POST"], "default": "GET", "env": "HTTP_METHOD" },
     { "key": "body", "label": "Corps", "type": "code", "language": "json", "env": "HTTP_BODY", "showIf": { "method": ["POST"] } }
   ],
-  "credential": { "type": "http-header", "required": false, "env": { "name": "HTTP_AUTH_HEADER", "value": "HTTP_AUTH_VALUE" } },
+  "credential": { "type": "http_header", "required": false, "env": { "name": "HTTP_AUTH_HEADER", "value": "HTTP_AUTH_VALUE" } },
   "outputs": [{ "key": "status", "type": "number", "description": "Code HTTP" }],
   "produces": ["file"],
   "resources": { "cpu": 0.5, "memory": "256Mi" },
@@ -143,9 +143,9 @@ Deux paramètres, ou un paramètre et un champ d'identifiant, ne peuvent pas vis
 }
 ```
 
-`kind` vaut `text`, `number`, `boolean` ou `secret`. Un secret n'a jamais de valeur par défaut. `type` est égal au nom du fichier.
+`kind` vaut `text`, `number`, `boolean` ou `secret`. Un secret n'a jamais de valeur par défaut. `type` est égal au nom du fichier et suit `^[a-z][a-z0-9_]{0,62}$` : minuscules, chiffres et soulignés, jamais de tiret. C'est la règle de la colonne `_poad.credentials.type` de l'engine : un type qui ne la respecte pas ne pourrait pas être enregistré.
 
-Types fournis : `postgres`, `mysql`, `s3`, `sftp`, `http-header`, `api-key`.
+Types fournis : `postgres`, `mysql`, `s3`, `sftp`, `http_header`, `api_key`.
 
 Dans une fiche, `credential.env` associe des clés de champs à des variables d'environnement (mêmes règles de nommage que les paramètres). Chaque clé doit exister dans le type. `credential.required` dit si l'étape peut tourner sans identifiant.
 

@@ -238,7 +238,8 @@
         "type": {
           "description": "Type d'identifiant : nom d'un fichier de credentials/.",
           "type": "string",
-          "minLength": 1
+          "pattern": "^[a-z][a-z0-9_]{0,62}$",
+          "x-message": "type d'identifiant invalide : minuscules, chiffres et soulignés (pas de tiret), commence par une lettre"
         },
         "required": { "type": "boolean" },
         "env": {

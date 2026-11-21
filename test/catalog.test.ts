@@ -23,7 +23,7 @@ describe("catalogue réel", () => {
     const { errors, catalog } = validateCatalog(ROOT);
     expect(errors).toEqual([]);
     expect(catalog.connectors.map((connector) => connector.dir)).toEqual(["custom-image", "http-request", "mediainfo", "postgres"]);
-    expect(catalog.credentials.map((credential) => credential.type)).toEqual(["api-key", "http-header", "mysql", "postgres", "s3", "sftp"]);
+    expect(catalog.credentials.map((credential) => credential.type)).toEqual(["api_key", "http_header", "mysql", "postgres", "s3", "sftp"]);
   });
 
   test("les catégories sont celles de la palette, dans l'ordre", () => {
@@ -70,7 +70,7 @@ function baseFiche(): Fiche {
       { key: "method", label: "Méthode", type: "choice", options: ["GET", "POST"], default: "GET", env: "DEMO_METHOD" },
       { key: "body", label: "Corps", type: "code", language: "json", env: "DEMO_BODY", showIf: { method: ["POST"] } },
     ],
-    credential: { type: "http-header", required: false, env: { name: "DEMO_AUTH_NAME", value: "DEMO_AUTH_VALUE" } },
+    credential: { type: "http_header", required: false, env: { name: "DEMO_AUTH_NAME", value: "DEMO_AUTH_VALUE" } },
     outputs: [{ key: "status", type: "number", description: "Code HTTP" }],
     resources: { cpu: 0.5, memory: "256Mi" },
     timeout: 60,
@@ -135,8 +135,9 @@ describe("fiches invalides", () => {
     ["clé inconnue dans un paramètre", (f) => (f.parameters[0].secret = true), /parameters\[0\] : clé inconnue.*« secret »/],
     ["options sur un paramètre text", (f) => (f.parameters[0].options = ["a"]), /parameters\[0\] : clé inconnue.*« options »/],
     ["type de paramètre inconnu", (f) => (f.parameters[0].type = "date"), /parameters\[0\]\.type : valeur non permise "date"/],
+    ["type d'identifiant avec un tiret", (f) => (f.credential.type = "http-header"), /credential\.type : type d'identifiant invalide : minuscules, chiffres et soulignés \(pas de tiret\)/],
     ["identifiant d'un type inconnu", (f) => (f.credential.type = "oracle"), /type d'identifiant inconnu "oracle"/],
-    ["champ d'identifiant inexistant", (f) => (f.credential.env = { token: "DEMO_TOKEN" }), /le champ « token » n'existe pas dans le type « http-header »/],
+    ["champ d'identifiant inexistant", (f) => (f.credential.env = { token: "DEMO_TOKEN" }), /le champ « token » n'existe pas dans le type « http_header »/],
     ["id mal formé", (f) => (f.id = "Demo_1"), /id invalide/],
     ["paramètre déclaré deux fois", (f) => (f.parameters[1].key = "url"), /paramètre « url » déclaré deux fois/],
     ["mémoire mal écrite", (f) => (f.resources.memory = "256MB"), /memory invalide/],
@@ -187,6 +188,40 @@ describe("fiches invalides", () => {
     expect(errorsFor((f) => (custom(f), (f.script = "run.sh"))).join("\n")).toMatch(/« custom » ne peut pas déclarer de script/);
     expect(errorsFor((f) => (custom(f), (f.parameters[0].env = "DEMO_IMAGE"))).join("\n")).toMatch(/pas de variable « env »/);
     expect(errorsFor((f) => (custom(f), (f.parameters = []))).join("\n")).toMatch(/doit avoir un paramètre « image »/);
+  });
+});
+
+describe("types d'identifiants", () => {
+  const field = (type: string, key: string) =>
+    (validateCatalog(ROOT).catalog.credentials.find((credential) => credential.type === type)?.fields as { key: string; kind: string }[]).find(
+      (item) => item.key === key,
+    );
+
+  test("un type s'écrit comme la colonne _poad.credentials.type : pas de tiret", () => {
+    const { catalog } = validateCatalog(ROOT);
+    for (const credential of catalog.credentials) expect(String(credential.type)).toMatch(/^[a-z][a-z0-9_]{0,62}$/);
+  });
+
+  test("un type avec un tiret est refusé, avec un message clair", () => {
+    const dir = join(scratch, `types-${++counter}`);
+    mkdirSync(join(dir, "credentials"), { recursive: true });
+    cpSync(join(ROOT, "categories.json"), join(dir, "categories.json"));
+    writeFileSync(
+      join(dir, "credentials", "api-key.json"),
+      JSON.stringify({ type: "api-key", name: "Clé", fields: [{ key: "key", label: "Clé", kind: "secret" }] }),
+    );
+    const errors = validateCatalog(dir).errors.map((error) => `${error.file}: ${error.message}`);
+    expect(errors.join("\n")).toMatch(/credentials\/api-key\.json: type : type invalide : minuscules, chiffres et soulignés \(pas de tiret\).*reçu : "api-key"/);
+  });
+
+  // s3 et api_key existent aussi dans le service meta de l'engine : mêmes clés des deux côtés.
+  test("s3 et api_key portent les champs du service meta", () => {
+    const keys = (type: string) =>
+      (validateCatalog(ROOT).catalog.credentials.find((credential) => credential.type === type)?.fields as { key: string }[]).map((item) => item.key);
+    expect(keys("s3")).toEqual(["endpoint", "region", "bucket", "access_key_id", "secret_access_key", "force_path_style"]);
+    expect(keys("api_key")).toEqual(["base_url", "key", "header"]);
+    expect(field("s3", "force_path_style")?.kind).toBe("boolean");
+    expect(field("api_key", "key")?.kind).toBe("secret");
   });
 });
 
